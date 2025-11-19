@@ -46,7 +46,6 @@ async function processMessages() {
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       settingSources: ['local'],
-      executable: 'node',
       cwd: workspaceDirectory,
       stderr: data => {
         if (activeConnection) {
