@@ -1,18 +1,18 @@
 {
-  "name": "claude-agent-server",
-  "module": "index.ts",
-  "type": "module",
+  "name": "claude-agent-server-monorepo",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "start:server": "bun run --filter @claude-agent/server start",
+    "build:e2b": "bun run --filter @claude-agent/e2b-build build",
+    "test:client": "bun run --filter @claude-agent/client test"
+  },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
     "@types/bun": "latest",
-    "prettier": "^3.6.2"
-  },
-  "peerDependencies": {
+    "prettier": "^3.6.2",
     "typescript": "^5"
-  },
-  "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.44",
-    "e2b": "^2.7.0"
   }
 }

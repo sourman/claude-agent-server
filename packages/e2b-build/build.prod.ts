@@ -8,7 +8,7 @@ import {
   E2B_TEMPLATE_ALIAS,
   SERVER_PORT,
   WORKSPACE_DIR_NAME,
-} from './const'
+} from '../server/const'
 
 const template = Template()
   .fromBunImage('1.3')
@@ -21,7 +21,7 @@ const template = Template()
   .setWorkdir('/home/user/app')
   .runCmd('ls -la')
   .runCmd('bun install')
-  .setStartCmd('bun index.ts', waitForPort(SERVER_PORT))
+  .setStartCmd('bun packages/server/index.ts', waitForPort(SERVER_PORT))
 
 async function main() {
   await Template.build(template, {

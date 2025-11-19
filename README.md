@@ -17,13 +17,17 @@ bun install
 
 ### Environment Setup
 
-Create a `.env` file from the example template:
+Create a `.env` file in the relevant package directories:
 
 ```bash
-cp .env.example .env
+# For Server
+cp packages/server/.env.example packages/server/.env
+
+# For Client
+cp packages/client/.env.example packages/client/.env
 ```
 
-Then edit `.env` and add your API keys:
+Then edit the `.env` files and add your API keys:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-your-api-key-here
@@ -34,10 +38,10 @@ E2B_API_KEY=e2b_your-api-key-here  # Optional, only for E2B deployment
 
 ## Usage
 
-### Start the Server
+### Start the Server (Local)
 
 ```bash
-bun index.ts
+bun run start:server
 ```
 
 The server will start on `http://localhost:3000` with:
@@ -232,96 +236,30 @@ Error messages:
 ### Example Client (Node.js/Bun)
 
 ```typescript
-import { WebSocket } from 'ws' // or use Bun's built-in WebSocket
+import { ClaudeAgentClient } from '@claude-agent/client'
 
-// Optional: Configure the query before connecting
-await fetch('http://localhost:3000/config', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    systemPrompt: 'You are a helpful coding assistant.',
-    allowedTools: ['read_file', 'write_file'],
-  }),
+const client = new ClaudeAgentClient({
+  debug: true,
+  // Optional: E2B configuration
+  // e2bApiKey: process.env.E2B_API_KEY,
 })
 
-// Connect to WebSocket
-const ws = new WebSocket('ws://localhost:3000/ws')
-const sessionId = crypto.randomUUID()
+await client.start()
 
-ws.on('open', () => {
-  console.log('Connected to Claude Agent SDK')
-
-  // Send a message
-  ws.send(
-    JSON.stringify({
-      type: 'user_message',
-      data: {
-        type: 'user',
-        session_id: sessionId,
-        parent_tool_use_id: null,
-        message: {
-          role: 'user',
-          content: 'What is the capital of France?',
-        },
-      },
-    }),
-  )
-})
-
-ws.on('message', data => {
-  const message = JSON.parse(data.toString())
-
+client.onMessage(message => {
   if (message.type === 'sdk_message') {
     console.log('Claude:', message.data)
-  } else if (message.type === 'error') {
-    console.error('Error:', message.error)
   }
 })
 
-ws.on('close', () => {
-  console.log('Disconnected')
+client.send({
+  type: 'user_message',
+  data: {
+    type: 'user',
+    session_id: 'session-1',
+    message: { role: 'user', content: 'Hello' },
+  },
 })
-```
-
-### Example Client (Browser)
-
-```javascript
-const ws = new WebSocket('ws://localhost:3000/ws')
-const sessionId = crypto.randomUUID()
-
-ws.onopen = () => {
-  console.log('Connected to Claude Agent SDK')
-
-  // Send a message
-  ws.send(
-    JSON.stringify({
-      type: 'user_message',
-      data: {
-        type: 'user',
-        session_id: sessionId,
-        parent_tool_use_id: null,
-        message: {
-          role: 'user',
-          content: 'Hello, Claude!',
-        },
-      },
-    }),
-  )
-}
-
-ws.onmessage = event => {
-  const message = JSON.parse(event.data)
-
-  if (message.type === 'sdk_message') {
-    console.log('Claude:', message.data)
-  } else if (message.type === 'error') {
-    console.error('Error:', message.error)
-  }
-}
-
-ws.onclose = () => {
-  console.log('Disconnected')
-}
 ```
 
 ## Architecture
@@ -348,20 +286,23 @@ The server is a simple **1-to-1 relay** between a single WebSocket client and th
 
 ## Project Structure
 
-The codebase follows a modular structure with **dash-case** naming convention for files:
+The codebase follows a monorepo structure:
 
 ```
 claude-agent-server/
-├── index.ts              # Main server entry point
-├── message-types.ts      # TypeScript type definitions for WebSocket messages
-├── message-handler.ts    # WebSocket message handling logic
-└── example-client.ts     # Example client implementation
+├── packages/
+│   ├── server/           # Main server implementation
+│   │   ├── index.ts
+│   │   ├── message-handler.ts
+│   │   └── ...
+│   ├── client/           # Client library and examples
+│   │   ├── src/
+│   │   └── example-client.ts
+│   └── e2b-build/        # E2B build scripts
+│       └── build.prod.ts
+├── package.json          # Root package.json (workspaces)
+└── README.md
 ```
-
-**File Naming Convention:**
-
-- All TypeScript files use **dash-case** (e.g., `message-types.ts`, `message-handler.ts`)
-- This improves readability and consistency across the codebase
 
 ## Testing
 
@@ -378,10 +319,10 @@ Open `http://localhost:3000/` in your browser to access the built-in test client
 Run the example client script:
 
 ```bash
-bun example-client.ts
+bun run test:client
 ```
 
-This will connect to the server, send a few test messages, and display the responses.
+This will connect to the server (or E2B sandbox), send a few test messages, and display the responses.
 
 ## E2B Deployment
 
@@ -391,7 +332,7 @@ This project can be deployed to [E2B](https://e2b.dev/) sandboxes for secure, is
 
 1. Create an E2B account at [e2b.dev](https://e2b.dev/)
 2. Get your E2B API key from the [dashboard](https://e2b.dev/dashboard?tab=keys)
-3. Add your E2B API key to `.env`:
+3. Add your E2B API key to `packages/client/.env`:
    ```bash
    E2B_API_KEY=e2b_your-api-key-here
    ```
@@ -401,7 +342,7 @@ This project can be deployed to [E2B](https://e2b.dev/) sandboxes for secure, is
 Build and deploy the template to E2B:
 
 ```bash
-bun build.prod.ts
+bun run build:e2b
 ```
 
 This will:
@@ -416,11 +357,11 @@ The build process may take a few minutes. Once complete, the template will be av
 
 ### Running with E2B
 
-The example client (`example-client.ts`) automatically uses E2B when both `E2B_API_KEY` and `ANTHROPIC_API_KEY` are set:
+The example client (`packages/client/example-client.ts`) automatically uses E2B when both `E2B_API_KEY` and `ANTHROPIC_API_KEY` are set:
 
 ```bash
-# Make sure both API keys are in your .env file
-bun example-client.ts
+# Make sure both API keys are in your packages/client/.env file
+bun run test:client
 ```
 
 The client will:
@@ -442,7 +383,7 @@ When using E2B:
 
 ### E2B Template Configuration
 
-The template is defined in `build.prod.ts`:
+The template is defined in `packages/e2b-build/build.prod.ts`:
 
 ```typescript
 const template = Template()
@@ -451,7 +392,7 @@ const template = Template()
   .gitClone('https://github.com/...', ...) // Clone repository
   .setWorkdir('/home/user/app')           // Set working directory
   .runCmd('bun install')                  // Install dependencies
-  .setStartCmd('bun index.ts', waitForPort(3000)) // Start server
+  .setStartCmd('bun packages/server/index.ts', waitForPort(3000)) // Start server
 ```
 
 You can customize this template to:
@@ -480,7 +421,7 @@ You can customize this template to:
 
 ## Configuration
 
-The server uses port 3000 by default. You can modify this in `index.ts`:
+The server uses port 3000 by default. You can modify this in `packages/server/index.ts`:
 
 ```typescript
 const server = Bun.serve<SessionData>({
@@ -493,10 +434,10 @@ const server = Bun.serve<SessionData>({
 
 The server supports setting the Anthropic API key in three ways:
 
-1. **Via `.env` file** (recommended for local development): Create a `.env` file in the project root:
+1. **Via `.env` file** (recommended for local development): Create a `.env` file in `packages/server`:
 
    ```bash
-   cp .env.example .env
+   cp packages/server/.env.example packages/server/.env
    ```
 
    Then edit `.env` and set your API key:
@@ -518,7 +459,7 @@ The server supports setting the Anthropic API key in three ways:
 3. **Via Environment Variable**: Set `ANTHROPIC_API_KEY` in your shell before starting the server:
    ```bash
    export ANTHROPIC_API_KEY=sk-ant-...
-   bun index.ts
+   bun run start:server
    ```
 
 **Note:** The API key set via the configuration endpoint will override any environment variable.

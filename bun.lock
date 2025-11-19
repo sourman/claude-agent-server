@@ -3,17 +3,42 @@
   "workspaces": {
     "": {
       "name": "claude-agent-wrapper",
+      "devDependencies": {
+        "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
+        "@types/bun": "latest",
+        "prettier": "^3.6.2",
+        "typescript": "^5",
+      },
+    },
+    "packages/client": {
+      "name": "@claude-agent/client",
+      "version": "0.0.1",
       "dependencies": {
         "@anthropic-ai/claude-agent-sdk": "^0.1.44",
         "e2b": "^2.7.0",
       },
       "devDependencies": {
-        "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
         "@types/bun": "latest",
-        "prettier": "^3.6.2",
       },
-      "peerDependencies": {
-        "typescript": "^5",
+    },
+    "packages/e2b-build": {
+      "name": "@claude-agent/e2b-build",
+      "version": "0.0.1",
+      "dependencies": {
+        "e2b": "^2.7.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
+    "packages/server": {
+      "name": "@claude-agent/server",
+      "version": "0.0.1",
+      "dependencies": {
+        "@anthropic-ai/claude-agent-sdk": "^0.1.44",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
       },
     },
   },
@@ -39,6 +64,12 @@
     "@babel/types": ["@babel/types@7.28.5", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.28.5" } }, "sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA=="],
 
     "@bufbuild/protobuf": ["@bufbuild/protobuf@2.10.1", "", {}, "sha512-ckS3+vyJb5qGpEYv/s1OebUHDi/xSNtfgw1wqKZo7MR9F2z+qXr0q5XagafAG/9O0QPVIUfST0smluYSTpYFkg=="],
+
+    "@claude-agent/client": ["@claude-agent/client@workspace:packages/client"],
+
+    "@claude-agent/e2b-build": ["@claude-agent/e2b-build@workspace:packages/e2b-build"],
+
+    "@claude-agent/server": ["@claude-agent/server@workspace:packages/server"],
 
     "@connectrpc/connect": ["@connectrpc/connect@2.0.0-rc.3", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.2.0" } }, "sha512-ARBt64yEyKbanyRETTjcjJuHr2YXorzQo0etyS5+P6oSeW8xEuzajA9g+zDnMcj1hlX2dQE93foIWQGfpru7gQ=="],
 
