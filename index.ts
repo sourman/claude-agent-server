@@ -56,6 +56,7 @@ async function processMessages() {
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       settingSources: ['local'],
+      cwd: '~/agent-workspace',
       ...queryConfig,
     };
 
