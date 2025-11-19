@@ -1,21 +1,19 @@
 # Claude Agent SDK WebSocket Server
 
-A WebSocket server that wraps the Claude Agent SDK, allowing real-time bidirectional communication with Claude through WebSockets.
+A WebSocket server that wraps the Claude Agent SDK, allowing real-time bidirectional communication with Claude through WebSockets. Deploy it as an E2B sandbox and connect via the TypeScript client library.
 
-## Features
+## Overview
 
-- 🔌 **WebSocket-based**: Real-time communication using WebSockets
-- 🎯 **Single Connection**: Simple 1-to-1 relay between one WebSocket client and the Claude Agent SDK
-- 🚀 **Built with Bun**: Leverages Bun's high-performance WebSocket implementation
-- 🧪 **Built-in Test Client**: Includes a web-based test interface
+**Typical Workflow:**
 
-## Installation
+1. **Build Your E2B Image** - Deploy the server as an E2B sandbox template using `bun run build:e2b`
+2. **Use the Client Library** - Install `@claude-agent/client` in your project and connect to your E2B sandbox
+3. **Modify the Server (Optional)** - If you need custom behavior, edit the server code in `packages/server/`
+4. **Test Locally** - Use `bun run start:server` and `bun run test:local` to test your changes before rebuilding
 
-```bash
-bun install
-```
+## Quick Start
 
-### Environment Setup
+### 1. Setup Environment
 
 Create a `.env` file in the root directory:
 
@@ -23,31 +21,250 @@ Create a `.env` file in the root directory:
 cp .env.example .env
 ```
 
-Then edit the `.env` file and add your API keys:
+Add your API keys:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-your-api-key-here
-E2B_API_KEY=e2b_your-api-key-here  # Optional, only for E2B deployment
+E2B_API_KEY=e2b_your-api-key-here
 ```
 
-**Note:** The scripts in `package.json` are configured to automatically load this root `.env` file.
+Install dependencies:
 
-## Usage
+```bash
+bun install
+```
 
-### Start the Server (Local)
+### 2. Build Your E2B Image
+
+Build and deploy the server as an E2B template:
+
+```bash
+bun run build:e2b
+```
+
+This creates a sandbox template named `claude-agent-server` on E2B. The build process:
+
+- Creates a sandbox based on Bun 1.3
+- Installs git and clones this repository
+- Installs dependencies
+- Configures the server to start automatically on port 3000
+
+The build may take a few minutes. Once complete, your template is ready to use.
+
+### 3. Use the Client Library
+
+Install the client library in your project:
+
+```bash
+npm install @claude-agent/client
+# or
+bun add @claude-agent/client
+```
+
+Connect to your E2B sandbox:
+
+```typescript
+import { ClaudeAgentClient } from '@claude-agent/client'
+
+const client = new ClaudeAgentClient({
+  e2bApiKey: process.env.E2B_API_KEY,
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  template: 'claude-agent-server', // Your E2B template name
+  debug: true,
+})
+
+// Start the client (creates E2B sandbox and connects)
+await client.start()
+
+// Listen for messages from Claude
+client.onMessage(message => {
+  if (message.type === 'sdk_message') {
+    console.log('Claude:', message.data)
+  }
+})
+
+// Send a message to Claude
+client.send({
+  type: 'user_message',
+  data: {
+    type: 'user',
+    session_id: 'my-session',
+    message: {
+      role: 'user',
+      content: 'Hello, Claude!',
+    },
+  },
+})
+
+// Clean up when done
+await client.stop()
+```
+
+That's it! The client library handles:
+
+- Creating and managing E2B sandboxes
+- WebSocket connection
+- Message serialization
+- Cleanup and resource management
+
+## Modifying the Server
+
+If you want to customize the server behavior:
+
+### 1. Edit Server Code
+
+The server code is in `packages/server/`:
+
+- `index.ts` - Main server and WebSocket handling
+- `message-handler.ts` - Message processing logic
+- `const.ts` - Configuration constants
+
+### 2. Test Locally
+
+Start the server locally:
 
 ```bash
 bun run start:server
 ```
 
-The server will start on `http://localhost:3000` with:
+In another terminal, run the test client against localhost:
+
+```bash
+bun run test:local
+```
+
+This runs `packages/client/example-client.ts` connected to `localhost:3000` instead of E2B.
+
+### 3. Rebuild E2B Image
+
+Once you're satisfied with your changes, rebuild the E2B template:
+
+```bash
+bun run build:e2b
+```
+
+Your updated server will be deployed to E2B with the same template name.
+
+## Available Scripts
+
+### `bun run build:e2b`
+
+Builds and deploys the server as an E2B template. This is the main way to deploy your server to the cloud.
+
+### `bun run test:client`
+
+Runs the example client (`packages/client/example-client.ts`) connected to an E2B sandbox. Requires both `E2B_API_KEY` and `ANTHROPIC_API_KEY` in your `.env` file.
+
+### `bun run start:server`
+
+Starts the server locally on `http://localhost:3000`. Use this for local development and testing.
+
+### `bun run test:local`
+
+Runs the example client connected to `localhost:3000`. Use this to test your local server changes before rebuilding the E2B image.
+
+## Client Library API
+
+The `@claude-agent/client` package provides a high-level TypeScript client for connecting to the server.
+
+### Installation
+
+```bash
+npm install @claude-agent/client
+# or
+bun add @claude-agent/client
+```
+
+### Constructor Options
+
+```typescript
+interface ClientOptions {
+  // Required (unless using environment variables)
+  anthropicApiKey?: string
+
+  // E2B Configuration (optional if using connectionUrl)
+  e2bApiKey?: string
+  template?: string // E2B template name, defaults to 'claude-agent-server'
+  timeoutMs?: number // Sandbox timeout, defaults to 5 minutes
+
+  // Connection Configuration
+  connectionUrl?: string // Use this to connect to local/custom server instead of E2B
+
+  // Other Options
+  debug?: boolean // Enable debug logging
+
+  // Query Configuration (passed to server)
+  agents?: Record<string, AgentDefinition>
+  allowedTools?: string[]
+  systemPrompt?:
+    | string
+    | { type: 'preset'; preset: 'claude_code'; append?: string }
+  model?: string
+}
+```
+
+### Methods
+
+- **`async start()`** - Initialize the client and connect to the server
+- **`send(message: WSInputMessage)`** - Send a message to the agent
+- **`onMessage(handler: (message: WSOutputMessage) => void)`** - Register a message handler (returns unsubscribe function)
+- **`async stop()`** - Disconnect and clean up resources
+
+### Example: Connect to E2B
+
+```typescript
+import { ClaudeAgentClient } from '@claude-agent/client'
+
+const client = new ClaudeAgentClient({
+  e2bApiKey: process.env.E2B_API_KEY,
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  template: 'claude-agent-server',
+  debug: true,
+})
+
+await client.start()
+
+client.onMessage(message => {
+  if (message.type === 'sdk_message') {
+    console.log('Claude:', message.data)
+  }
+})
+
+client.send({
+  type: 'user_message',
+  data: {
+    type: 'user',
+    session_id: 'session-1',
+    message: { role: 'user', content: 'Hello' },
+  },
+})
+
+await client.stop()
+```
+
+### Example: Connect to Local Server
+
+```typescript
+const client = new ClaudeAgentClient({
+  connectionUrl: 'http://localhost:3000',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+})
+
+await client.start()
+```
+
+For more details, see [`packages/client/README.md`](packages/client/README.md).
+
+## Server API Reference
+
+**Note:** If you're using the `@claude-agent/client` library, you don't need to interact with these endpoints directly. The client handles configuration and WebSocket connections for you. This section is for advanced users who want to connect to the server directly or build their own client.
+
+The server runs on `http://localhost:3000` (or your E2B sandbox URL) with:
 
 - Config endpoint: `http://localhost:3000/config`
 - WebSocket endpoint: `ws://localhost:3000/ws`
 
 ### Configuration API
-
-**Important:** Configuration must be set **before** connecting to the WebSocket. The query stream starts when the first WebSocket connection is established and uses the configuration at that time.
 
 #### POST /config
 
@@ -229,35 +446,6 @@ Error messages:
 }
 ```
 
-### Example Client (Node.js/Bun)
-
-```typescript
-import { ClaudeAgentClient } from '@claude-agent/client'
-
-const client = new ClaudeAgentClient({
-  debug: true,
-  // Optional: E2B configuration
-  // e2bApiKey: process.env.E2B_API_KEY,
-})
-
-await client.start()
-
-client.onMessage(message => {
-  if (message.type === 'sdk_message') {
-    console.log('Claude:', message.data)
-  }
-})
-
-client.send({
-  type: 'user_message',
-  data: {
-    type: 'user',
-    session_id: 'session-1',
-    message: { role: 'user', content: 'Hello' },
-  },
-})
-```
-
 ## Architecture
 
 The server is a simple **1-to-1 relay** between a single WebSocket client and the Claude Agent SDK:
@@ -320,40 +508,13 @@ bun run test:client
 
 This will connect to the server (or E2B sandbox), send a few test messages, and display the responses.
 
-## E2B Deployment
+## E2B Deployment Details
 
-This project can be deployed to [E2B](https://e2b.dev/) sandboxes for secure, isolated execution in the cloud.
-
-### Prerequisites
-
-1. Create an E2B account at [e2b.dev](https://e2b.dev/)
-2. Get your E2B API key from the [dashboard](https://e2b.dev/dashboard?tab=keys)
-3. Add your E2B API key to the root `.env`:
-   ```bash
-   E2B_API_KEY=e2b_your-api-key-here
-   ```
-
-### Building the E2B Template
-
-Build and deploy the template to E2B:
-
-```bash
-bun run build:e2b
-```
-
-This will:
-
-- Create a sandbox template based on Bun 1.3
-- Install git and clone this repository
-- Install dependencies
-- Configure the server to start on port 3000
-- Register the template with alias `claude-agent-server`
-
-The build process may take a few minutes. Once complete, the template will be available for creating sandboxes.
+This section provides additional details about E2B deployment. For the basic setup, see the [Quick Start](#quick-start) section.
 
 ### Customizing the Template Name
 
-You can customize the E2B template name when using the client library by passing the `template` option:
+By default, `bun run build:e2b` creates a template named `claude-agent-server`. To use a different name, you can modify `packages/e2b-build/build.prod.ts` or specify it when using the client:
 
 ```typescript
 import { ClaudeAgentClient } from '@claude-agent/client'
@@ -367,33 +528,23 @@ const client = new ClaudeAgentClient({
 await client.start()
 ```
 
-If you don't specify a template, it defaults to `'claude-agent-server'`.
+### How E2B Sandboxes Work
 
-### Running with E2B
+When you use the client library with E2B:
 
-The example client (`packages/client/example-client.ts`) automatically uses E2B when both `E2B_API_KEY` and `ANTHROPIC_API_KEY` are set:
+1. **Sandbox Creation**: A fresh sandbox is created from your built template (`claude-agent-server` by default)
+2. **Automatic Startup**: The server starts automatically in the sandbox on port 3000 (configured via `setStartCmd` in `build.prod.ts`)
+3. **Secure Endpoints**: E2B provides HTTPS and WSS endpoints for your sandbox
+4. **Isolation**: Each sandbox runs in complete isolation with its own filesystem and resources
+5. **Automatic Cleanup**: Sandboxes are terminated when the client disconnects
+
+To test with E2B, simply run:
 
 ```bash
-# Make sure both API keys are in your root .env file
 bun run test:client
 ```
 
-The client will:
-
-1. Create a new E2B sandbox from the `claude-agent-server` template
-2. Connect to the sandbox's WebSocket endpoint
-3. Run test commands
-4. Clean up and terminate the sandbox when done
-
-### How It Works
-
-When using E2B:
-
-1. **Sandbox Creation**: A fresh sandbox is created from your built template
-2. **Automatic Startup**: The server starts automatically in the sandbox (configured via `setStartCmd` in `build.prod.ts`)
-3. **HTTPS/WSS**: E2B provides secure HTTPS and WSS endpoints for your sandbox
-4. **Isolation**: Each sandbox runs in complete isolation with its own filesystem and resources
-5. **Cleanup**: Sandboxes are automatically terminated when the client disconnects
+This runs `packages/client/example-client.ts` which creates an E2B sandbox, connects to it, runs test commands, and cleans up.
 
 ### E2B Template Configuration
 
@@ -446,37 +597,12 @@ const server = Bun.serve<SessionData>({
 
 ## Environment Variables
 
-The server supports setting the Anthropic API key in three ways:
+Environment variables are loaded from the root `.env` file. See [Quick Start](#quick-start) for setup instructions.
 
-1. **Via `.env` file** (recommended for local development): Create a `.env` file in the project root:
+**API Key Priority:**
 
-   ```bash
-   cp .env.example .env
-   ```
-
-   Then edit `.env` and set your API key:
-
-   ```
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-
-   The provided npm scripts are configured to load this file.
-
-2. **Via Configuration API** (recommended for runtime configuration): Set `anthropicApiKey` in the `/config` endpoint:
-
-   ```bash
-   curl -X POST http://localhost:3000/config \
-     -H "Content-Type: application/json" \
-     -d '{"anthropicApiKey": "sk-ant-..."}'
-   ```
-
-3. **Via Environment Variable**: Set `ANTHROPIC_API_KEY` in your shell before starting the server:
-   ```bash
-   export ANTHROPIC_API_KEY=sk-ant-...
-   bun run start:server
-   ```
-
-**Note:** The API key set via the configuration endpoint will override any environment variable.
+- If you set `anthropicApiKey` via the Configuration API (`/config` endpoint), it will override the `ANTHROPIC_API_KEY` environment variable.
+- When using the client library, you can pass `anthropicApiKey` in the constructor options.
 
 ## License
 
