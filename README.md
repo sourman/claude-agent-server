@@ -383,6 +383,101 @@ bun example-client.ts
 
 This will connect to the server, send a few test messages, and display the responses.
 
+## E2B Deployment
+
+This project can be deployed to [E2B](https://e2b.dev/) sandboxes for secure, isolated execution in the cloud.
+
+### Prerequisites
+
+1. Create an E2B account at [e2b.dev](https://e2b.dev/)
+2. Get your E2B API key from the [dashboard](https://e2b.dev/dashboard?tab=keys)
+3. Add your E2B API key to `.env`:
+   ```bash
+   E2B_API_KEY=e2b_your-api-key-here
+   ```
+
+### Building the E2B Template
+
+Build and deploy the template to E2B:
+
+```bash
+bun build.prod.ts
+```
+
+This will:
+
+- Create a sandbox template based on Bun 1.3
+- Install git and clone this repository
+- Install dependencies
+- Configure the server to start on port 3000
+- Register the template with alias `claude-agent-server`
+
+The build process may take a few minutes. Once complete, the template will be available for creating sandboxes.
+
+### Running with E2B
+
+The example client (`example-client.ts`) automatically uses E2B when both `E2B_API_KEY` and `ANTHROPIC_API_KEY` are set:
+
+```bash
+# Make sure both API keys are in your .env file
+bun example-client.ts
+```
+
+The client will:
+
+1. Create a new E2B sandbox from the `claude-agent-server` template
+2. Connect to the sandbox's WebSocket endpoint
+3. Run test commands
+4. Clean up and terminate the sandbox when done
+
+### How It Works
+
+When using E2B:
+
+1. **Sandbox Creation**: A fresh sandbox is created from your built template
+2. **Automatic Startup**: The server starts automatically in the sandbox (configured via `setStartCmd` in `build.prod.ts`)
+3. **HTTPS/WSS**: E2B provides secure HTTPS and WSS endpoints for your sandbox
+4. **Isolation**: Each sandbox runs in complete isolation with its own filesystem and resources
+5. **Cleanup**: Sandboxes are automatically terminated when the client disconnects
+
+### E2B Template Configuration
+
+The template is defined in `build.prod.ts`:
+
+```typescript
+const template = Template()
+  .fromBunImage('1.3')                    // Use Bun 1.3 base image
+  .runCmd('sudo apt install -y git')      // Install git
+  .gitClone('https://github.com/...', ...) // Clone repository
+  .setWorkdir('/home/user/app')           // Set working directory
+  .runCmd('bun install')                  // Install dependencies
+  .setStartCmd('bun index.ts', waitForPort(3000)) // Start server
+```
+
+You can customize this template to:
+
+- Install additional system packages
+- Pre-configure environment variables
+- Change resource limits (CPU, memory)
+- Modify the startup command
+
+### E2B vs Local Development
+
+**Local Development** (localhost):
+
+- Faster iteration
+- Direct access to local filesystem
+- No sandbox overhead
+- Good for development and testing
+
+**E2B Deployment**:
+
+- Isolated execution environment
+- Secure cloud sandboxes
+- Scalable infrastructure
+- Production-ready
+- No local setup required
+
 ## Configuration
 
 The server uses port 3000 by default. You can modify this in `index.ts`:
