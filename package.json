@@ -5,7 +5,7 @@
     "packages/*"
   ],
   "scripts": {
-    "start:server": "bun run --elide-lines=0 --env-file=.env --filter @claude-agent/server start",
+    "start:server": "bun run --elide-lines=0 --filter @claude-agent/server start",
     "build:e2b": "bun run --elide-lines=0 --env-file=.env --filter @claude-agent/e2b-build build",
     "test:client": "bun run --elide-lines=0 --env-file=.env --filter @claude-agent/client test",
     "test:local": "bun run --elide-lines=0 --env-file=.env --filter @claude-agent/client test:local"
