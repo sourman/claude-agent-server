@@ -5,11 +5,11 @@ A TypeScript client library for connecting to Claude Agent Server with E2B sandb
 ## Installation
 
 ```bash
-npm install @claude-agent/client
+npm install @dzhng/claude-agent
 # or
-yarn add @claude-agent/client
+yarn add @dzhng/claude-agent
 # or
-bun add @claude-agent/client
+bun add @dzhng/claude-agent
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ bun add @claude-agent/client
 ### Basic Example
 
 ```typescript
-import { ClaudeAgentClient } from '@claude-agent/client'
+import { ClaudeAgentClient } from '@dzhng/claude-agent'
 
 const client = new ClaudeAgentClient({
   e2bApiKey: process.env.E2B_API_KEY,
