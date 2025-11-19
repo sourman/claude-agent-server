@@ -5,10 +5,10 @@
     "packages/*"
   ],
   "scripts": {
-    "start:server": "bun run --env-file=.env --filter @claude-agent/server start",
-    "build:e2b": "bun run --env-file=.env --filter @claude-agent/e2b-build build",
-    "test:client": "bun run --env-file=.env --filter @claude-agent/client test",
-    "test:local": "bun run --env-file=.env --filter @claude-agent/client test:local"
+    "start:server": "bun run --elide-lines=0 --env-file=.env --filter @claude-agent/server start",
+    "build:e2b": "bun run --elide-lines=0 --env-file=.env --filter @claude-agent/e2b-build build",
+    "test:client": "bun run --elide-lines=0 --env-file=.env --filter @claude-agent/client test",
+    "test:local": "bun run --elide-lines=0 --env-file=.env --filter @claude-agent/client test:local"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",

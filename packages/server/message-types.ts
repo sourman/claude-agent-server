@@ -25,6 +25,7 @@ export type WSOutputMessage =
   | { type: 'connected' }
   | { type: 'sdk_message'; data: SDKMessage }
   | { type: 'error'; error: string }
+  | { type: 'info'; data: string }
   | {
       type: 'file_result'
       operation: 'create_file' | 'delete_file'

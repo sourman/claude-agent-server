@@ -130,6 +130,9 @@ export class ClaudeAgentClient {
   }
 
   private handleMessage(message: WSOutputMessage) {
+    if (this.options.debug) {
+      console.log('📨 Received message:', JSON.stringify(message, null, 2))
+    }
     this.messageHandlers.forEach(handler => handler(message))
   }
 

@@ -46,14 +46,27 @@ async function processMessages() {
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       settingSources: ['local'],
+      executable: 'node',
       cwd: workspaceDirectory,
+      stderr: data => {
+        if (activeConnection) {
+          const output: WSOutputMessage = {
+            type: 'info',
+            data,
+          }
+          activeConnection.send(JSON.stringify(output))
+        }
+      },
       ...queryConfig,
       ...(queryConfig.anthropicApiKey && {
         env: {
+          PATH: process.env.PATH,
           ANTHROPIC_API_KEY: queryConfig.anthropicApiKey,
         },
       }),
     }
+
+    console.info('Starting query with options', options)
 
     activeStream = query({
       prompt: generateMessages(),

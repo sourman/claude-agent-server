@@ -50,14 +50,6 @@ async function main() {
           },
         },
       },
-      {
-        type: 'list_files',
-      },
-      {
-        type: 'read_file',
-        path: 'output.txt',
-        encoding: 'utf-8',
-      },
     ] as const
 
     // Register message handler
@@ -93,8 +85,7 @@ async function main() {
       client.send(command)
 
       // Wait for response
-      const waitTime = command.type === 'user_message' ? 10000 : 1000
-      await new Promise(resolve => setTimeout(resolve, waitTime))
+      await new Promise(resolve => setTimeout(resolve, 2000))
     }
 
     // Disconnect
