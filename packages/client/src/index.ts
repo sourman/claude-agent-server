@@ -1,8 +1,24 @@
-import { Sandbox } from 'e2b'
+import {
+  FilesystemEventType,
+  Sandbox,
+  type FilesystemEvent,
+  type WatchHandle,
+} from 'e2b'
 
-import type { QueryConfig, WSInputMessage, WSOutputMessage } from './types'
+import type {
+  QueryConfig,
+  WSInputMessage,
+  WSOutputMessage,
+} from '../../server/message-types'
 
-export * from './types'
+export type {
+  QueryConfig,
+  WSInputMessage,
+  WSOutputMessage,
+  FilesystemEvent,
+  WatchHandle,
+}
+export { FilesystemEventType }
 
 export const DEFAULT_TEMPLATE = 'claude-agent-server'
 export const SERVER_PORT = 3000
@@ -171,6 +187,20 @@ export class ClaudeAgentClient {
       throw new Error('Sandbox not initialized')
     }
     return this.sandbox.files.list(path)
+  }
+
+  async watchDir(
+    path: string,
+    onEvent: (event: FilesystemEvent) => void | Promise<void>,
+    opts?: {
+      recursive?: boolean
+      onExit?: (err?: Error) => void | Promise<void>
+    },
+  ): Promise<WatchHandle> {
+    if (!this.sandbox) {
+      throw new Error('Sandbox not initialized')
+    }
+    return this.sandbox.files.watchDir(path, onEvent, opts)
   }
 
   async stop() {
