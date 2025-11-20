@@ -66,8 +66,19 @@ async function main() {
       },
     ] as const
 
+    // Cleanup function
+    const stopAndExit = async () => {
+      console.log('\n✅ Received result message, stopping...')
+      console.log('\n🛑 Stopping file watcher...')
+      await watchHandle.stop()
+      console.log('\n👋 Closing connection...')
+      await client.stop()
+      console.log('✅ Sandbox terminated')
+      process.exit(0)
+    }
+
     // Register message handler
-    client.onMessage(message => {
+    client.onMessage(async message => {
       switch (message.type) {
         case 'connected':
           console.log('🔗 Connection confirmed')
@@ -79,6 +90,11 @@ async function main() {
 
         case 'sdk_message':
           console.log('🤖 SDK Message:', JSON.stringify(message.data, null, 2))
+
+          // Stop when we receive a "result" type message
+          if (message.data.type === 'result') {
+            await stopAndExit()
+          }
           break
 
         default:
@@ -94,17 +110,9 @@ async function main() {
     }
 
     // Keep watching for changes
-    console.log('\n👀 Watching for file changes... (will close in 30 seconds)')
-
-    // Disconnect after 30 seconds
-    setTimeout(async () => {
-      console.log('\n🛑 Stopping file watcher...')
-      await watchHandle.stop()
-      console.log('\n👋 Closing connection...')
-      await client.stop()
-      console.log('✅ Sandbox terminated')
-      process.exit(0)
-    }, 30000)
+    console.log(
+      '\n👀 Watching for file changes... (will stop when result is received)',
+    )
   } catch (error) {
     console.error('❌ Error:', error)
     await client.stop()
