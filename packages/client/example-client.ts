@@ -4,7 +4,8 @@
  * Usage: bun example-client.ts
  */
 
-import { ClaudeAgentClient, FilesystemEventType } from './src/index'
+import { ClaudeAgentClient } from './src/index'
+import { FilesystemEventType } from './src/types'
 
 if (!process.env.E2B_API_KEY) {
   console.error('❌ E2B_API_KEY environment variable is required')
