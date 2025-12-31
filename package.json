@@ -15,5 +15,8 @@
     "@types/bun": "latest",
     "prettier": "^3.6.2",
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@dzhng/claude-agent": "^0.2.0"
   }
 }

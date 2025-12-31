@@ -55,6 +55,8 @@ export interface ClientOptions extends Partial<QueryConfig> {
   template?: string
   /** Timeout in milliseconds. Defaults to 5 minutes */
   timeoutMs?: number
+  /** Connection URL for local/custom server. If provided, will use this instead of E2B */
+  connectionUrl?: string
   /** Enable debug logging */
   debug?: boolean
 }

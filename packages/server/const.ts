@@ -9,6 +9,6 @@ export const SERVER_PORT = 3000
 export const WORKSPACE_DIR_NAME = 'agent-workspace'
 
 // E2B configuration
-export const E2B_TEMPLATE_ALIAS = 'claude-agent-server'
+export const E2B_TEMPLATE_ALIAS = 'claude-agent-server-ahmed'
 export const E2B_CPU_COUNT = 2
 export const E2B_MEMORY_MB = 2048

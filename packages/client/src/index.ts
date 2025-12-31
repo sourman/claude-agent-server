@@ -23,16 +23,72 @@ export class ClaudeAgentClient {
   }
 
   async start() {
-    const apiKey = this.options.e2bApiKey || process.env.E2B_API_KEY
     const anthropicApiKey =
       this.options.anthropicApiKey || process.env.ANTHROPIC_API_KEY
 
-    if (!apiKey) {
-      throw new Error('E2B_API_KEY is required')
-    }
-
     if (!anthropicApiKey) {
       throw new Error('ANTHROPIC_API_KEY is required')
+    }
+
+    if (this.options.connectionUrl) {
+      const baseUrl = this.options.connectionUrl.replace(/\/$/, '')
+      const configUrl = `${baseUrl}/config`
+      const wsUrl = baseUrl.replace(/^http/, 'ws') + '/ws'
+
+      if (this.options.debug) {
+        console.log(`📡 Configuring server at ${configUrl}...`)
+      }
+
+      const configResponse = await fetch(configUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          anthropicApiKey,
+          ...this.options,
+        }),
+      })
+
+      if (!configResponse.ok) {
+        const error = await configResponse.text()
+        throw new Error(`Failed to configure server: ${error}`)
+      }
+
+      if (this.options.debug) {
+        console.log('🔌 Connecting to WebSocket...')
+      }
+
+      return new Promise<void>((resolve, reject) => {
+        this.ws = new WebSocket(wsUrl)
+
+        this.ws.onopen = () => {
+          if (this.options.debug) console.log('✅ Connected to Claude Agent SDK')
+          resolve()
+        }
+
+        this.ws.onmessage = event => {
+          try {
+            const message = JSON.parse(event.data.toString()) as WSOutputMessage
+            this.handleMessage(message)
+          } catch (error) {
+            console.error('Failed to parse message:', error)
+          }
+        }
+
+        this.ws.onerror = error => {
+          console.error('WebSocket error:', error)
+          reject(error)
+        }
+
+        this.ws.onclose = () => {
+          if (this.options.debug) console.log('👋 Disconnected')
+        }
+      })
+    }
+
+    const apiKey = this.options.e2bApiKey || process.env.E2B_API_KEY
+
+    if (!apiKey) {
+      throw new Error('E2B_API_KEY is required when not using connectionUrl')
     }
 
     if (this.options.debug) {
